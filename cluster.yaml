@@ -1,0 +1,43 @@
+--
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: cluster
+  region: ap-southeast-1
+  version: "1.27"
+
+privateCluster:
+  enabled: true
+  skipEndpointCreation: true
+
+vpc:
+  id: "vpc-id"
+  subnets:
+    # must provide 'private' and/or 'public' subnets by availibility zone as shown
+    private:
+      ap-southeast-1a:
+        id: "subnet-id"
+
+      ap-southeast-1b:
+        id: "subnet-id"
+
+fargateProfiles:
+  - name: fp-default
+    selectors:
+      # All workloads in the "default" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: default
+      # All workloads in the "kube-system" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: kube-system
+  - name: fp-ui
+    selectors:
+      # All workloads in the "ui" Kubernetes namespace matching the following
+      # label selectors will be scheduled onto Fargate:
+      - namespace: ui
+  - name: fp-api
+    selectors:
+      # All workloads in the "api" Kubernetes namespace matching the following
+      # label selectors will be scheduled onto Fargate:
+      - namespace: api

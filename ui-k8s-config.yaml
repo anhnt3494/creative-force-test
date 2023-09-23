@@ -1,0 +1,96 @@
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "ui"
+  namespace: "ui"
+  labels:
+    app: "ui"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: "ui"
+  template:
+    metadata:
+      labels:
+        app: "ui"
+    spec:
+      containers:
+        - name: "ui-container"
+          image: "accountid.dkr.ecr.ap-southeast-1.amazonaws.com/ui:prod"
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              memory: "2G"
+              cpu: "1"
+            limits:
+              memory: "2G"
+              cpu: "1"
+---
+apiVersion: "autoscaling/v2"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "ui-hpa"
+  namespace: "ui"
+  labels:
+    app: "ui"
+spec:
+  scaleTargetRef:
+    kind: "Deployment"
+    name: "ui"
+    apiVersion: "apps/v1"
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: "Resource"
+      resource:
+        name: "memory"
+        target:
+          type: Utilization
+          averageUtilization: 85
+    - type: "Resource"
+      resource:
+        name: "cpu"
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "ui"
+  namespace: "ui"
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /
+  labels:
+    app: "ui"
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: "TCP"
+  type: "NodePort"
+  selector:
+    app: "ui"
